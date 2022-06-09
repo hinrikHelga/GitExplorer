@@ -27,31 +27,79 @@ class _RepositoryListViewState extends State<RepositoryListView> {
     );
   }
 
-  
+  Widget _buildEmptySearchMainText() {
+    return const Padding(
+      padding: EdgeInsets.only(top: 30.0, bottom: 4.0),
+      child: Text(
+        'A little empty',
+        style: TextStyle(
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+          color: Color.fromRGBO(51, 60, 82, 1)
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchSecondaryText() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        'Search for a repository and save it as favourite',
+        style: TextStyle(
+          fontSize: 14.0,
+          color: Color.fromRGBO(153, 157, 168, 1)
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildEmptyColumn() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 200.0
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Image.asset('assets/images/empty_folder.png'),
+          _buildEmptySearchMainText(),
+          _buildEmptySearchSecondaryText()
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 100.0,),
-          _buildHeading(),
-          _SearchField(
-            onChange: (value) {
-              setState(() {
-                search = value;
-              });
-            },
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 100.0,),
+              _buildHeading(),
+              _SearchField(
+                onChange: (value) {
+                  setState(() {
+                    search = value;
+                  });
+                },
+              ),
+            ],
           ),
-          Center(
-            child: Text(
-              search
-            ),
-          )
-        ],
-      ),
+        ),
+        if (search.length < 3)
+          Align(
+            alignment: Alignment.center,
+            child: _buildEmptyColumn()
+          ),
+      ],
     );
   }
 }
@@ -98,10 +146,7 @@ class _SearchFieldState extends State<_SearchField> {
           ),
           filled: true,
           fillColor: const Color.fromRGBO(242, 243, 247, 1),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: Colors.black38,
-          ),
+          prefixIcon: Image.asset('assets/icons/search_icon.png'),
           hintText: 'Search for repository'
         ),
         cursorColor: Colors.black54,
