@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gitexplorer/bloc/repository/repository_bloc.dart';
@@ -11,11 +13,18 @@ class RepositoryListView extends StatefulWidget {
 
 class _RepositoryListViewState extends State<RepositoryListView> {
   late String search;
+  Timer? debouncer;
 
   @override
   void initState() {
     super.initState();
     search = '';
+  }
+
+  @override
+  void dispose() {
+    debouncer?.cancel();
+    super.dispose();
   }
 
   Widget _buildHeading() {
@@ -75,11 +84,23 @@ class _RepositoryListViewState extends State<RepositoryListView> {
     );
   }
 
+  void debounce(VoidCallback callback, { Duration duration = const Duration(milliseconds: 1000) }) {
+    if (debouncer != null) {
+      debouncer!.cancel();
+    }
+
+    debouncer = Timer(duration, callback);
+  }
+
+  void queryRepos() => debounce(() {
+    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: search));
+  });
+
   @override
   Widget build(BuildContext context) {
     final bool doSearch = search.length >= 3;
     if (doSearch) {
-      context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: search));
+      queryRepos();
     }
     return Stack(
       children: [
