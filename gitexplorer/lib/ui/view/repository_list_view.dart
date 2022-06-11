@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gitexplorer/bloc/repository/repository_bloc.dart';
 
 class RepositoryListView extends StatefulWidget {
   const RepositoryListView({ Key? key }) : super(key: key);
@@ -75,6 +77,10 @@ class _RepositoryListViewState extends State<RepositoryListView> {
 
   @override
   Widget build(BuildContext context) {
+    final bool doSearch = search.length >= 3;
+    if (doSearch) {
+      context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: search));
+    }
     return Stack(
       children: [
         Padding(
@@ -91,10 +97,17 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                   });
                 },
               ),
+              if (doSearch)
+                BlocBuilder<RepositoryBloc, RepositoryState>(
+                  builder: (context, state) {
+                    debugPrint('state is: $state');
+                    return Container();
+                  }
+                )
             ],
           ),
         ),
-        if (search.length < 3)
+        if (!doSearch)
           Align(
             alignment: Alignment.center,
             child: _buildEmptyColumn()
