@@ -7,7 +7,9 @@ part of 'repository.dart';
 // **************************************************************************
 
 Repository _$RepositoryFromJson(Map<String, dynamic> json) => Repository(
-      imgUrl: json['img_url'] as String?,
+      owner: json['owner'] == null
+          ? null
+          : Owner.fromJson(json['owner'] as Map<String, dynamic>),
       fullName: json['full_name'] as String?,
       language: json['language'] as String?,
       description: json['description'] as String?,
@@ -20,7 +22,7 @@ Repository _$RepositoryFromJson(Map<String, dynamic> json) => Repository(
 
 Map<String, dynamic> _$RepositoryToJson(Repository instance) =>
     <String, dynamic>{
-      'img_url': instance.imgUrl,
+      'owner': instance.owner,
       'full_name': instance.fullName,
       'language': instance.language,
       'description': instance.description,
@@ -42,4 +44,12 @@ Map<String, dynamic> _$RepositoriesToJson(Repositories instance) =>
     <String, dynamic>{
       'total_count': instance.totalCount,
       'items': instance.items,
+    };
+
+Owner _$OwnerFromJson(Map<String, dynamic> json) => Owner(
+      avatarUrl: json['avatar_url'] as String?,
+    );
+
+Map<String, dynamic> _$OwnerToJson(Owner instance) => <String, dynamic>{
+      'avatar_url': instance.avatarUrl,
     };

@@ -6,8 +6,10 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: RepositoryListView(),
+    return const SafeArea(
+      child: Scaffold(
+        body: RepositoryListView(),
+      ),
     );
   }
 }

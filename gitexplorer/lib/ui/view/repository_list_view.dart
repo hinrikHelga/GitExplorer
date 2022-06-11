@@ -91,8 +91,11 @@ class _RepositoryListViewState extends State<RepositoryListView> {
       leading: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          repo.imgUrl != null 
-            ? CachedNetworkImage(imageUrl: repo.imgUrl!,) 
+          repo.owner?.avatarUrl != null 
+            ? SizedBox(width: 50, child: ClipRRect(
+                borderRadius: BorderRadius.circular(10.0),
+                child: CachedNetworkImage(fit: BoxFit.scaleDown, imageUrl: repo.owner!.avatarUrl!,)
+                )) 
             : Image.asset('assets/icons/default_folder_icon.png')
         ],
       ),
@@ -158,7 +161,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 100.0,),
+              const SizedBox(height: 50.0,),
               _buildHeading(),
               _SearchField(
                 onChange: (value) {
@@ -171,13 +174,13 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                 BlocBuilder<RepositoryBloc, RepositoryState>(
                   builder: (context, state) {
                     if (state is RepositoryStateLoading || state is RepositoryStateInitial) {
-                      return const Expanded(child: const Center(child: CircularProgressIndicator()));
+                      return const Expanded(child: Center(child: CircularProgressIndicator()));
                     } else if (state is RepositoryStateRepositoriesLoaded) {
                       return _buildRepositoryList();
                     } else if (state is RepositoryStateFailed) {
-                      return const Center(child: Text('No result'),);
+                      return Expanded(child: Center(child: Text('Something went wrong:  ${state.error}'),));
                     } else {
-                      return Container();
+                      return const Expanded(child: Center(child: Text('No result'),));
                     }
                   }
                 )

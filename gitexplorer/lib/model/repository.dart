@@ -6,7 +6,7 @@ part 'repository.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class Repository extends Equatable {
-  final String? imgUrl;
+  final Owner? owner;
   final String? fullName;
   final String? language;
   final String? description;
@@ -18,7 +18,7 @@ class Repository extends Equatable {
 
 
   const Repository({
-    this.imgUrl,
+    this.owner,
     this.fullName,
     this.language,
     this.description,
@@ -53,4 +53,20 @@ class Repositories extends Equatable {
 
   @override
   List<Object?> get props => [];
+}
+
+@JsonSerializable(fieldRename: FieldRename.snake)
+class Owner extends Equatable {
+  final String? avatarUrl;
+
+  const Owner({
+    this.avatarUrl
+  });
+
+  factory Owner.fromJson(Map<String, dynamic> json) => _$OwnerFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OwnerToJson(this);
+
+  @override
+  List<Object?> get props => [avatarUrl];
 }
