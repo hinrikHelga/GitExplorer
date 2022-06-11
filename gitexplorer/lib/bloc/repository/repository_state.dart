@@ -13,6 +13,11 @@ class RepositoryStateRepositoriesLoaded extends RepositoryState {
     RepositoryStateRepositoriesLoaded(this.response);
 }
 
+class RepositoryStateRepositoryLoaded extends RepositoryState {
+  final Repository response;
+  RepositoryStateRepositoryLoaded(this.response);
+}
+
 class RepositoryStateFailed extends RepositoryState {
     final String error;
     RepositoryStateFailed(this.error);

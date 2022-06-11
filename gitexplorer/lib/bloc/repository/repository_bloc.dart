@@ -26,5 +26,13 @@ class RepositoryBloc extends Bloc<RepositoryEvent, RepositoryState> {
         state(RepositoryStateFailed(e.toString()));
       }
     }
+
+    if (event is ClearCachedRepositoriesEvent) {
+      repository.clearCache();
+    }
+
+    if (event is FetchRepositoryEvent) {
+      state(RepositoryStateRepositoryLoaded(event.repo));
+    }
   }
 }

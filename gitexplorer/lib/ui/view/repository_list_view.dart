@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gitexplorer/bloc/repository/repository_bloc.dart';
+import 'package:gitexplorer/bloc/repository/search_cubit.dart';
 import 'package:gitexplorer/model/repository.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gitexplorer/ui/view/repository_detail_view.dart';
 
 class RepositoryListView extends StatefulWidget {
   const RepositoryListView({ Key? key }) : super(key: key);
@@ -14,13 +16,11 @@ class RepositoryListView extends StatefulWidget {
 }
 
 class _RepositoryListViewState extends State<RepositoryListView> {
-  late String search;
   Timer? debouncer;
 
   @override
   void initState() {
     super.initState();
-    search = '';
   }
 
   @override
@@ -87,28 +87,33 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   Widget _buildRepositoryListItem(Repository repo) {
-    return ListTile(
-      leading: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          repo.owner?.avatarUrl != null 
-            ? SizedBox(width: 50, child: ClipRRect(
-                borderRadius: BorderRadius.circular(10.0),
-                child: CachedNetworkImage(fit: BoxFit.scaleDown, imageUrl: repo.owner!.avatarUrl!,)
-                )) 
-            : Image.asset('assets/icons/default_folder_icon.png')
-        ],
+    return InkWell(
+      onTap: () {
+        context.read<RepositoryBloc>().add(FetchRepositoryEvent(repo: repo));
+      },
+      child: ListTile(
+        leading: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            repo.owner?.avatarUrl != null 
+              ? SizedBox(width: 50, child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.0),
+                  child: CachedNetworkImage(fit: BoxFit.scaleDown, imageUrl: repo.owner!.avatarUrl!,)
+                  )) 
+              : Image.asset('assets/icons/default_folder_icon.png')
+          ],
+        ),
+        title: FittedBox(
+          fit: BoxFit.scaleDown, 
+          alignment: Alignment.centerLeft, 
+          child: Text(
+            repo.fullName ?? '',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color.fromRGBO(51, 60, 82, 1)
+        ),)),
+        subtitle: Text(repo.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
       ),
-      title: FittedBox(
-        fit: BoxFit.scaleDown, 
-        alignment: Alignment.centerLeft, 
-        child: Text(
-          repo.fullName ?? '',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color.fromRGBO(51, 60, 82, 1)
-      ),)),
-      subtitle: Text(repo.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
     );
   }
 
@@ -145,55 +150,83 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   void queryRepos() => debounce(() {
-    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: search));
+    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: context.read<SearchCubit>().state.query));
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool doSearch = search.length >= 3;
-    if (doSearch) {
-      queryRepos();
-    }
-    return Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 50.0,),
-              _buildHeading(),
-              _SearchField(
-                onChange: (value) {
-                  setState(() {
-                    search = value;
-                  });
-                },
-              ),
-              if (doSearch)
-                BlocBuilder<RepositoryBloc, RepositoryState>(
-                  builder: (context, state) {
-                    if (state is RepositoryStateLoading || state is RepositoryStateInitial) {
-                      return const Expanded(child: Center(child: CircularProgressIndicator()));
-                    } else if (state is RepositoryStateRepositoriesLoaded) {
-                      return _buildRepositoryList();
-                    } else if (state is RepositoryStateFailed) {
-                      return Expanded(child: Center(child: Text('Something went wrong:  ${state.error}'),));
-                    } else {
-                      return const Expanded(child: Center(child: Text('No result'),));
+    return BlocConsumer<SearchCubit, SearchState>(
+      listenWhen: (previous, current) {
+        // clear cached repositories in case of a new query
+        if (previous.query != current.query) {
+          context.read<RepositoryBloc>().add(ClearCachedRepositoriesEvent());
+          return true;
+        }
+        return false;
+      },
+      listener: ((context, state) {
+        if (state.query.length >= 3) {
+          queryRepos();
+        }
+      }),
+      builder: ((context, state) => BlocListener<RepositoryBloc, RepositoryState>(
+      listener: (context, state) {
+        // take user to new screen if he tabs on a specific repository
+        if (state is RepositoryStateRepositoryLoaded) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return BlocProvider.value(
+                  value: BlocProvider.of<RepositoryBloc>(context),
+                  child: const RepositoryDetailView(),
+                );
+              },
+            ),
+          );
+        }
+      },
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 50.0,),
+                _buildHeading(),
+                _SearchField(
+                  onChange: (value) {
+                    context.read<SearchCubit>().search(value);
+                    // setState(() {
+                    //   search = value;
+                    // });
+                  },
+                ),
+                if (context.read<SearchCubit>().state.query.length >= 3)
+                  BlocBuilder<RepositoryBloc, RepositoryState>(
+                    builder: (context, state) {
+                      if (state is RepositoryStateLoading || state is RepositoryStateInitial) {
+                        return const Expanded(child: Center(child: CircularProgressIndicator()));
+                      } else if (state is RepositoryStateRepositoriesLoaded) {
+                        return _buildRepositoryList();
+                      } else if (state is RepositoryStateFailed) {
+                        return Expanded(child: Center(child: Text('Something went wrong: ${state.error}'),));
+                      } else {
+                        return const Expanded(child: Center(child: Text('No result'),));
+                      }
                     }
-                  }
-                )
-            ],
+                  )
+              ],
+            ),
           ),
-        ),
-        if (!doSearch)
-          Align(
-            alignment: Alignment.center,
-            child: _buildEmptyColumn()
-          ),
-      ],
-    );
+          if (context.read<SearchCubit>().state.query.length < 3)
+            Align(
+              alignment: Alignment.center,
+              child: _buildEmptyColumn()
+            ),
+        ],
+      ))));
   }
 }
 
