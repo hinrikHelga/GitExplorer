@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gitexplorer/bloc/repository/repository_bloc.dart';
+import 'package:gitexplorer/model/repository.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RepositoryListView extends StatefulWidget {
   const RepositoryListView({ Key? key }) : super(key: key);
@@ -84,6 +86,53 @@ class _RepositoryListViewState extends State<RepositoryListView> {
     );
   }
 
+  Widget _buildRepositoryListItem(Repository repo) {
+    return ListTile(
+      leading: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          repo.imgUrl != null 
+            ? CachedNetworkImage(imageUrl: repo.imgUrl!,) 
+            : Image.asset('assets/icons/default_folder_icon.png')
+        ],
+      ),
+      title: FittedBox(
+        fit: BoxFit.scaleDown, 
+        alignment: Alignment.centerLeft, 
+        child: Text(
+          repo.fullName ?? '',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color.fromRGBO(51, 60, 82, 1)
+      ),)),
+      subtitle: Text(repo.description ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,),
+    );
+  }
+
+  Widget _buildRepositoryList() {
+    final repoBloc = context.read<RepositoryBloc>().state as RepositoryStateRepositoriesLoaded;
+
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${repoBloc.response.totalCount} results', style: const TextStyle(color: Color.fromRGBO(153, 157, 168, 1)),),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: ListView.builder(
+                itemCount: repoBloc.response.items?.length ?? 0,
+                itemBuilder: ((context, index) {
+                  return _buildRepositoryListItem(repoBloc.response.items![index]);
+                }),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   void debounce(VoidCallback callback, { Duration duration = const Duration(milliseconds: 1000) }) {
     if (debouncer != null) {
       debouncer!.cancel();
@@ -121,8 +170,15 @@ class _RepositoryListViewState extends State<RepositoryListView> {
               if (doSearch)
                 BlocBuilder<RepositoryBloc, RepositoryState>(
                   builder: (context, state) {
-                    debugPrint('state is: $state');
-                    return Container();
+                    if (state is RepositoryStateLoading || state is RepositoryStateInitial) {
+                      return const Expanded(child: const Center(child: CircularProgressIndicator()));
+                    } else if (state is RepositoryStateRepositoriesLoaded) {
+                      return _buildRepositoryList();
+                    } else if (state is RepositoryStateFailed) {
+                      return const Center(child: Text('No result'),);
+                    } else {
+                      return Container();
+                    }
                   }
                 )
             ],

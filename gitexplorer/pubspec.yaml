@@ -27,6 +27,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  cached_network_image: ^3.2.0
   dio: ^4.0.6
   dio_flutter_transformer2: ^4.0.1
   equatable: ^2.0.3
@@ -63,6 +64,7 @@ flutter:
   assets:
     - assets/images/empty_folder.png
     - assets/icons/search_icon.png
+    - assets/icons/default_folder_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

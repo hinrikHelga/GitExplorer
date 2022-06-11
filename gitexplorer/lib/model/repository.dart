@@ -9,6 +9,7 @@ class Repository extends Equatable {
   final String? imgUrl;
   final String? fullName;
   final String? language;
+  final String? description;
   final int? forksCount;
   final int? openIssuesCount;
   final int? watchersCount;
@@ -20,6 +21,7 @@ class Repository extends Equatable {
     this.imgUrl,
     this.fullName,
     this.language,
+    this.description,
     this.forksCount,
     this.openIssuesCount,
     this.watchersCount,

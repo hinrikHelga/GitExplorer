@@ -18,12 +18,12 @@ class RepositoryBloc extends Bloc<RepositoryEvent, RepositoryState> {
 
   FutureOr<void> _onEvent(RepositoryEvent event, Emitter<RepositoryState> state) async {
     if (event is FetchRepositoriesEvent) {
-      emit(RepositoryStateLoading());
+      state(RepositoryStateLoading());
       try {
         final response = await repository.getRepositories(event.query);
-        emit(RepositoryStateRepositoriesLoaded(response));
+        state(RepositoryStateRepositoriesLoaded(response));
       } catch (e) {
-        emit(RepositoryStateFailed(e.toString()));
+        state(RepositoryStateFailed(e.toString()));
       }
     }
   }
