@@ -76,6 +76,8 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   Widget _buildEmptyColumn() {
+    var height = MediaQuery.of(context).size.height;
+
     return Align(
       alignment: Alignment.center,
       child: ConstrainedBox(
@@ -87,6 +89,9 @@ class _RepositoryListViewState extends State<RepositoryListView> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            SizedBox(
+              height: height / 5,
+            ),
             Image.asset('assets/images/empty_folder.png'),
             _buildEmptySearchMainText(),
             _buildEmptySearchSecondaryText()
@@ -185,6 +190,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
 
   @override
   Widget build(BuildContext context) {
+    var height = MediaQuery.of(context).size.height;
     return BlocConsumer<SearchCubit, SearchState>(
       listenWhen: (previous, current) {
         // clear cached repositories in case of a new query
@@ -208,62 +214,66 @@ class _RepositoryListViewState extends State<RepositoryListView> {
           queryRepos();
         }
       }),
-      builder: ((context, state) => Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 50.0,),
-                _buildHeading(),
-                SearchField(
-                  hintText: 'Search for repository',
-                  onChange: (value) {
-                    context.read<SearchCubit>().search(value);
-                  },
-                ),
-                  BlocConsumer<RepositoryBloc, RepositoryState>(
-                    listener: ((context, state) {
-                      // if spinner is on and we have loaded more repos
-                      if (_showSpinner && state is RepositoryStateRepositoriesLoaded) {
-                        setState(() {
-                          _showSpinner = false;
-                        });
+      builder: ((context, state) => SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(), // avoids keyboard overflow on bottom
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: height / 15),
+                  _buildHeading(),
+                  SearchField(
+                    hintText: 'Search for repository',
+                    onChange: (value) {
+                      context.read<SearchCubit>().search(value);
+                    },
+                  ),
+                    BlocConsumer<RepositoryBloc, RepositoryState>(
+                      listener: ((context, state) {
+                        // if spinner is on and we have loaded more repos
+                        if (_showSpinner && state is RepositoryStateRepositoriesLoaded) {
+                          setState(() {
+                            _showSpinner = false;
+                          });
+                        }
+                        // take user to new screen if he tabs on a specific repository
+                        if (state is RepositoryStateRepositoryLoaded) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return BlocProvider.value(
+                                  value: BlocProvider.of<RepositoryBloc>(context),
+                                  child: const RepositoryDetailView(),
+                                );
+                              },
+                            ),
+                          );
+                        }
+                      }),
+                      builder: (context, state) {
+                        if (state is RepositoryStateEmpty || context.read<SearchCubit>().state.query!.length < 3) {
+                          return _buildEmptyColumn();
+                        } else if (state is RepositoryStateLoading) {
+                          return const Expanded(child: Center(child: CircularProgressIndicator()));
+                        } else if (state is RepositoryStateRepositoriesLoaded) {
+                          return _buildRepositoryList();
+                        } else if (state is RepositoryStateFailed) {
+                          return Expanded(child: Center(child: Text('Something went wrong: ${state.error}'),));
+                        } else {
+                          return const Expanded(child: Center(child: Text('No result'),));
+                        }
                       }
-                      // take user to new screen if he tabs on a specific repository
-                      if (state is RepositoryStateRepositoryLoaded) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) {
-                              return BlocProvider.value(
-                                value: BlocProvider.of<RepositoryBloc>(context),
-                                child: const RepositoryDetailView(),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                    }),
-                    builder: (context, state) {
-                      if (state is RepositoryStateEmpty || context.read<SearchCubit>().state.query!.length < 3) {
-                        return _buildEmptyColumn();
-                      } else if (state is RepositoryStateLoading) {
-                        return const Expanded(child: Center(child: CircularProgressIndicator()));
-                      } else if (state is RepositoryStateRepositoriesLoaded) {
-                        return _buildRepositoryList();
-                      } else if (state is RepositoryStateFailed) {
-                        return Expanded(child: Center(child: Text('Something went wrong: ${state.error}'),));
-                      } else {
-                        return const Expanded(child: Center(child: Text('No result'),));
-                      }
-                    }
-                  )
-              ],
+                    )
+                ],
+              ),
             ),
-          ),
-        ],
-      )));
+          ],
+        ),
+      )
+    ));
   }
 }

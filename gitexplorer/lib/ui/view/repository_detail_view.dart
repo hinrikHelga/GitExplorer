@@ -88,13 +88,15 @@ class RepositoryDetailView extends StatelessWidget {
         child: Scaffold(
           body: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0,),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20,),
-                _buildBackButton(),
-                _buildRepoDetails()
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20,),
+                  _buildBackButton(),
+                  _buildRepoDetails()
+                ],
+              ),
             ),
           ),
         ),
