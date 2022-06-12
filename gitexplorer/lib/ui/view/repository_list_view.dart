@@ -2,8 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gitexplorer/bloc/repository/repository_bloc.dart';
-import 'package:gitexplorer/bloc/repository/search_cubit.dart';
+import 'package:gitexplorer/bloc/index.dart';
 import 'package:gitexplorer/model/repository.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gitexplorer/ui/view/repository_detail_view.dart';
