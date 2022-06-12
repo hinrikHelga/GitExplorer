@@ -18,7 +18,7 @@ class RepositoryBloc extends Bloc<RepositoryEvent, RepositoryState> {
 
   FutureOr<void> _onEvent(RepositoryEvent event, Emitter<RepositoryState> state) async {
     if (event is FetchRepositoriesEvent) {
-      if ((event.page ?? 1) <= 1) { state(RepositoryStateLoading()); } // only load if there is a fresh query
+      if (event.page <= 1) { state(RepositoryStateLoading()); } // only load if there is a fresh query
       try {
         final repositories = await repository.getRepositories(event.page, event.query);
         state(RepositoryStateRepositoriesLoaded(repositories));

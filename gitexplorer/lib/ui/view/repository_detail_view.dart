@@ -14,6 +14,7 @@ class RepositoryDetailView extends StatelessWidget {
     Widget _buildBackButton() {
       return InkWell(
         onTap: () {
+          // Return back to the list view containing the cached repositories as we supply the request with the current page number of the query
           context.read<RepositoryBloc>().add(FetchRepositoriesEvent(page: context.read<SearchCubit>().state.page));
           Navigator.pop(context);
         },

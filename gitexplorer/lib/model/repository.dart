@@ -56,6 +56,13 @@ class Repositories extends Equatable {
     this.items
   });
 
+  const Repositories.empty() 
+    : totalCount = null,
+      items = null;
+
+  bool get isEmpty => items == null;
+  bool get isNotEmpty => !isEmpty;
+
   factory Repositories.fromJson(Map<String, dynamic> json) => _$RepositoriesFromJson(json);
 
   Map<String, dynamic> toJson() => _$RepositoriesToJson(this);

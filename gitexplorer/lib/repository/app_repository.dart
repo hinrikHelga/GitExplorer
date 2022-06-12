@@ -5,13 +5,18 @@ class AppRepository {
   final Dio dio;
   AppRepository(this.dio);
 
-  Repositories? _repos;
-  int? _page;
+  Repositories _repos = const Repositories.empty();
+  int _page = 1;
 
-  getRepositories(int? page, String? search) async {
-    bool _reposExist = _repos != null;
-    if (_reposExist && _page == (page ?? 1)) {
-      return _repos;
+  /// Fetch data on GitHub repositories.
+  /// 
+  /// Throws a [DioError] for a failed response.
+  Future<Repositories> getRepositories(int page, String? search) async {
+    /**
+     * If the pages requested
+     */
+    if (_repos.isNotEmpty && _page == page) {
+      return _repos; // return cached repos without any additions.
     } else {
       try {
         final response = await dio. get("/search/repositories",
@@ -23,18 +28,18 @@ class AppRepository {
         );
         if (response.data != null) {
           if (response.statusCode == 200 || response.statusCode == 201) {
-            if (_reposExist) {
-              // fetches next pagination
-              _repos!.items!.addAll(Repositories.fromJson(response.data).items!.toList());
+            if (_repos.isNotEmpty) {
+              // fetches next pagination and add result to cahced repos.
+              _repos.items!.addAll(Repositories.fromJson(response.data).items!.toList());
               _page = page;
             } else {
               // fresh search
               _page = page;
               _repos = Repositories.fromJson(response.data);
             }
-            return _repos;
           }
         }
+        return _repos;
       } on DioError catch (e) {
         throw Exception(e.response ?? 'Something went wrong');
       }
@@ -42,7 +47,7 @@ class AppRepository {
   }
 
   clearCache() {
-    _repos = null;
+    _repos = const Repositories.empty();
     _page = 0;
   }
 }

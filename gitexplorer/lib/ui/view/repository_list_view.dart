@@ -148,7 +148,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                   if (noty is ScrollEndNotification && _scrollController.position.extentAfter == 0) {
                     debugPrint('$noty');
                     var cubit = context.read<SearchCubit>();
-                    cubit.loadMoreRepositories(cubit.state.page! + 1);
+                    cubit.loadMoreRepositories(cubit.state.page + 1);
                   }
                   return false;
                 },
@@ -175,6 +175,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
     );
   }
 
+  // give user a bit of time to finish typing a query before fetching from the API
   void debounce(VoidCallback callback, { Duration duration = const Duration(milliseconds: 1000) }) {
     if (debouncer != null) {
       debouncer!.cancel();
@@ -193,14 +194,18 @@ class _RepositoryListViewState extends State<RepositoryListView> {
     var height = MediaQuery.of(context).size.height;
     return BlocConsumer<SearchCubit, SearchState>(
       listenWhen: (previous, current) {
-        // clear cached repositories in case of a new query
+        /**
+         *  Clear cached repositories in case of a new query.
+         *  If this condition isn't met, then the listener to fetch more repositories will not be invoked,
+         *  and the app will use the cached repositories from a previous request to display for the user.
+         */
         if (previous.query != current.query) {
           context.read<RepositoryBloc>().add(ClearCachedRepositoriesEvent());
           return true;
         }
 
         // fetch next batch of repositories
-        if ((previous.page ?? 1) < (current.page ?? 1)) {
+        if (previous.page < current.page) {
           setState(() {
             _showSpinner = true;
           });
@@ -231,20 +236,23 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                   ),
                     BlocConsumer<RepositoryBloc, RepositoryState>(
                       listener: ((context, state) {
-                        // if spinner is on and we have loaded more repos
+                         /**
+                         * If the spinner is on, it means that the user has already attmepted to load more repositories.
+                         * If the current state is 'RepositoriesLoaded', it means the app has fetched more repos to state so the spinner can be closed.
+                         */
                         if (_showSpinner && state is RepositoryStateRepositoriesLoaded) {
                           setState(() {
                             _showSpinner = false;
                           });
                         }
-                        // take user to new screen if he tabs on a specific repository
+                        // navigate the user to new screen if he tabs on a specific repository
                         if (state is RepositoryStateRepositoryLoaded) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) {
                                 return BlocProvider.value(
-                                  value: BlocProvider.of<RepositoryBloc>(context),
+                                  value: BlocProvider.of<RepositoryBloc>(context),  // get the existing instance of the bloc with the repository to show to the user.
                                   child: const RepositoryDetailView(),
                                 );
                               },
