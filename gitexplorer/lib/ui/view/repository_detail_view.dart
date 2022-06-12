@@ -9,12 +9,12 @@ class RepositoryDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<RepositoryBloc>().state as RepositoryStateRepositoryLoaded;
-    final repo = bloc.response;
+    final repo = bloc.repository;
 
     Widget _buildBackButton() {
       return InkWell(
         onTap: () {
-          context.read<RepositoryBloc>().add(FetchRepositoriesEvent());
+          context.read<RepositoryBloc>().add(FetchRepositoriesEvent(page: context.read<SearchCubit>().state.page));
           Navigator.pop(context);
         },
         child: Image.asset('assets/icons/arrow.png'),
@@ -48,13 +48,15 @@ class RepositoryDetailView extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 100, maxWidth: 100),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10.0),
-                child: CachedNetworkImage(fit: BoxFit.scaleDown, imageUrl: repo.owner!.avatarUrl!,)
+                child: repo.owner!.avatarUrl == null
+                  ? Image.asset('assets/icons/default_folder_icon.png')
+                  : CachedNetworkImage(fit: BoxFit.scaleDown, imageUrl: repo.owner!.avatarUrl!,)
                 ),
             ),
             SizedBox(height: height / 50),
-            Text(repo.fullName!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0, color: Color.fromRGBO(51, 60, 82, 1))),
+            Text(repo.fullName ?? '---', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0, color: Color.fromRGBO(51, 60, 82, 1))),
             SizedBox(height: height / 100,),
-            Text(repo.language!, style: const TextStyle(fontWeight: FontWeight.bold, color: Color.fromRGBO(153, 157, 168, 1))),
+            Text(repo.language ?? '---' , style: const TextStyle(fontWeight: FontWeight.bold, color: Color.fromRGBO(153, 157, 168, 1))),
             SizedBox(height: height / 30),
             Container(
               decoration: BoxDecoration(
@@ -69,7 +71,7 @@ class RepositoryDetailView extends StatelessWidget {
                   _buildDivider(),
                   _buildDetail('Starred by', repo.stargazersCount.toString()),
                   _buildDivider(),
-                  _buildDetail('Latest Release version', ''),
+                  _buildDetail('Latest Release version', '---'),
                 ],
               ),
             )

@@ -6,6 +6,9 @@ import 'package:gitexplorer/bloc/index.dart';
 import 'package:gitexplorer/model/repository.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gitexplorer/ui/view/repository_detail_view.dart';
+import 'package:gitexplorer/ui/widget/search_field.dart';
+
+final bucketGlobal = PageStorageBucket();
 
 class RepositoryListView extends StatefulWidget {
   const RepositoryListView({ Key? key }) : super(key: key);
@@ -16,15 +19,20 @@ class RepositoryListView extends StatefulWidget {
 
 class _RepositoryListViewState extends State<RepositoryListView> {
   Timer? debouncer;
+  late ScrollController _scrollController;
+  late bool _showSpinner;
 
   @override
   void initState() {
     super.initState();
+    _showSpinner = false;
+    _scrollController = ScrollController();
   }
 
   @override
   void dispose() {
     debouncer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -68,19 +76,22 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   Widget _buildEmptyColumn() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 200.0
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/empty_folder.png'),
-          _buildEmptySearchMainText(),
-          _buildEmptySearchSecondaryText()
-        ],
+    return Align(
+      alignment: Alignment.center,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 200.0
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/empty_folder.png'),
+            _buildEmptySearchMainText(),
+            _buildEmptySearchSecondaryText()
+          ],
+        ),
       ),
     );
   }
@@ -123,18 +134,37 @@ class _RepositoryListViewState extends State<RepositoryListView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${repoBloc.response.totalCount} results', style: const TextStyle(color: Color.fromRGBO(153, 157, 168, 1)),),
+          Text('${repoBloc.repositories.totalCount} results', style: const TextStyle(color: Color.fromRGBO(153, 157, 168, 1)),),
           Expanded(
             child: Align(
               alignment: Alignment.topLeft,
-              child: ListView.builder(
-                itemCount: repoBloc.response.items?.length ?? 0,
-                itemBuilder: ((context, index) {
-                  return _buildRepositoryListItem(repoBloc.response.items![index]);
-                }),
+              child: NotificationListener(
+                onNotification: (noty) {
+                  if (noty is ScrollEndNotification && _scrollController.position.extentAfter == 0) {
+                    debugPrint('$noty');
+                    var cubit = context.read<SearchCubit>();
+                    cubit.loadMoreRepositories(cubit.state.page! + 1);
+                  }
+                  return false;
+                },
+                child: PageStorage(
+                  bucket: bucketGlobal,
+                  child: ListView.builder(
+                    key: const PageStorageKey<String>('repositoryPage'),
+                    controller: _scrollController,
+                    itemCount: (repoBloc.repositories.items?.length ?? 0),
+                    itemBuilder: ((context, index) {
+                      return _buildRepositoryListItem(repoBloc.repositories.items![index]);
+                    }),
+                  ),
+                ),
               ),
             ),
-          )
+          ),
+          if (_showSpinner) const Center(child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: CircularProgressIndicator(),
+          ),)
         ],
       ),
     );
@@ -149,7 +179,8 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   void queryRepos() => debounce(() {
-    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: context.read<SearchCubit>().state.query));
+    final cubit = context.read<SearchCubit>();
+    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: cubit.state.query, page: cubit.state.page));
   });
 
   @override
@@ -161,31 +192,23 @@ class _RepositoryListViewState extends State<RepositoryListView> {
           context.read<RepositoryBloc>().add(ClearCachedRepositoriesEvent());
           return true;
         }
+
+        // fetch next batch of repositories
+        if ((previous.page ?? 1) < (current.page ?? 1)) {
+          setState(() {
+            _showSpinner = true;
+          });
+          return true;
+        }
+
         return false;
       },
       listener: ((context, state) {
-        if (state.query.length >= 3) {
+        if (state.query!.length >= 3) {
           queryRepos();
         }
       }),
-      builder: ((context, state) => BlocListener<RepositoryBloc, RepositoryState>(
-      listener: (context, state) {
-        // take user to new screen if he tabs on a specific repository
-        if (state is RepositoryStateRepositoryLoaded) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) {
-                return BlocProvider.value(
-                  value: BlocProvider.of<RepositoryBloc>(context),
-                  child: const RepositoryDetailView(),
-                );
-              },
-            ),
-          );
-        }
-      },
-      child: Stack(
+      builder: ((context, state) => Stack(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -194,18 +217,39 @@ class _RepositoryListViewState extends State<RepositoryListView> {
               children: [
                 const SizedBox(height: 50.0,),
                 _buildHeading(),
-                _SearchField(
+                SearchField(
+                  hintText: 'Search for repository',
                   onChange: (value) {
                     context.read<SearchCubit>().search(value);
-                    // setState(() {
-                    //   search = value;
-                    // });
                   },
                 ),
-                if (context.read<SearchCubit>().state.query.length >= 3)
-                  BlocBuilder<RepositoryBloc, RepositoryState>(
+                  BlocConsumer<RepositoryBloc, RepositoryState>(
+                    listener: ((context, state) {
+                      // if spinner is on and we have loaded more repos
+                      if (_showSpinner && state is RepositoryStateRepositoriesLoaded) {
+                        setState(() {
+                          _showSpinner = false;
+                        });
+                      }
+                      // take user to new screen if he tabs on a specific repository
+                      if (state is RepositoryStateRepositoryLoaded) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return BlocProvider.value(
+                                value: BlocProvider.of<RepositoryBloc>(context),
+                                child: const RepositoryDetailView(),
+                              );
+                            },
+                          ),
+                        );
+                      }
+                    }),
                     builder: (context, state) {
-                      if (state is RepositoryStateLoading || state is RepositoryStateInitial) {
+                      if (state is RepositoryStateEmpty || context.read<SearchCubit>().state.query!.length < 3) {
+                        return _buildEmptyColumn();
+                      } else if (state is RepositoryStateLoading) {
                         return const Expanded(child: Center(child: CircularProgressIndicator()));
                       } else if (state is RepositoryStateRepositoriesLoaded) {
                         return _buildRepositoryList();
@@ -219,64 +263,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
               ],
             ),
           ),
-          if (context.read<SearchCubit>().state.query.length < 3)
-            Align(
-              alignment: Alignment.center,
-              child: _buildEmptyColumn()
-            ),
         ],
-      ))));
-  }
-}
-
-class _SearchField extends StatefulWidget {
-  final Function(String) onChange;
-
-  const _SearchField({ Key? key, required this.onChange }) : super(key: key);
-
-  @override
-  State<_SearchField> createState() => _SearchFieldState();
-}
-
-class _SearchFieldState extends State<_SearchField> {
-  late TextEditingController _searchRepoController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchRepoController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchRepoController.dispose();  
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20.0),
-      child: TextField(
-        controller: _searchRepoController,
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.all(8),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: const BorderSide(style: BorderStyle.none),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: const BorderSide(style: BorderStyle.none),
-          ),
-          filled: true,
-          fillColor: const Color.fromRGBO(242, 243, 247, 1),
-          prefixIcon: Image.asset('assets/icons/search_icon.png'),
-          hintText: 'Search for repository'
-        ),
-        cursorColor: Colors.black54,
-        onChanged: widget.onChange,
-      ),
-    );
+      )));
   }
 }

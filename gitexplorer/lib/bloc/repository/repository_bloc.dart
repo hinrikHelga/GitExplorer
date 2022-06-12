@@ -12,16 +12,16 @@ part 'repository_state.dart';
 class RepositoryBloc extends Bloc<RepositoryEvent, RepositoryState> {
   final AppRepository repository;
 
-  RepositoryBloc({required this.repository}) : super(RepositoryStateInitial()) {
+  RepositoryBloc({required this.repository}) : super(RepositoryStateEmpty()) {
     on<RepositoryEvent>((event, emit) => _onEvent(event, emit));
   }
 
   FutureOr<void> _onEvent(RepositoryEvent event, Emitter<RepositoryState> state) async {
     if (event is FetchRepositoriesEvent) {
-      state(RepositoryStateLoading());
+      if ((event.page ?? 1) <= 1) { state(RepositoryStateLoading()); } // only load if there is a fresh query
       try {
-        final response = await repository.getRepositories(event.query);
-        state(RepositoryStateRepositoriesLoaded(response));
+        final repositories = await repository.getRepositories(event.page, event.query);
+        state(RepositoryStateRepositoriesLoaded(repositories));
       } catch (e) {
         state(RepositoryStateFailed(e.toString()));
       }

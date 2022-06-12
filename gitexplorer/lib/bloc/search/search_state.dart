@@ -1,16 +1,21 @@
 part of 'search_cubit.dart';
 
 class SearchState extends Equatable {
-  final String query;
+  final String? query;
+  final int? page;
 
   const SearchState({
-    required this.query
+    this.query,
+    this.page 
   });
 
   SearchState copyWith({
-    required String query
-  }) => SearchState(query: query);
+    String? query,
+    int? page
+  }) => SearchState(
+    query: query ?? this.query,
+    page: page ?? 1);
 
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [query, page];
 }

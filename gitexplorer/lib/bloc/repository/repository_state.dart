@@ -4,18 +4,18 @@ abstract class RepositoryState {
   const RepositoryState();
 }
 
-class RepositoryStateInitial extends RepositoryState {}
+class RepositoryStateEmpty extends RepositoryState {}
 
 class RepositoryStateLoading extends RepositoryState {}
 
 class RepositoryStateRepositoriesLoaded extends RepositoryState {
-    final Repositories response;
-    RepositoryStateRepositoriesLoaded(this.response);
+    final Repositories repositories;
+    RepositoryStateRepositoriesLoaded(this.repositories);
 }
 
 class RepositoryStateRepositoryLoaded extends RepositoryState {
-  final Repository response;
-  RepositoryStateRepositoryLoaded(this.response);
+  final Repository repository;
+  RepositoryStateRepositoryLoaded(this.repository);
 }
 
 class RepositoryStateFailed extends RepositoryState {

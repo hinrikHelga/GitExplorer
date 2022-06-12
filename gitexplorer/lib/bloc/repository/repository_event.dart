@@ -3,8 +3,9 @@ part of 'repository_bloc.dart';
 abstract class RepositoryEvent {}
 
 class FetchRepositoriesEvent extends RepositoryEvent {
-  final String? query; // in case we use cached repos
-  FetchRepositoriesEvent({this.query});
+  final int? page;
+  final String? query; // nullable in case we use cached repos
+  FetchRepositoriesEvent({this.page, this.query});
 }
 
 class FetchRepositoryEvent extends RepositoryEvent {
