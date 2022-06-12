@@ -72,7 +72,7 @@ class RepositoryDetailView extends StatelessWidget {
                   _buildDivider(),
                   _buildDetail('Starred by', repo.stargazersCount.toString()),
                   _buildDivider(),
-                  _buildDetail('Latest Release version', '---'),
+                  _buildDetail('Last release version', '---'),
                 ],
               ),
             )

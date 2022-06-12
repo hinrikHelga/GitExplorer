@@ -14,3 +14,5 @@ class FetchRepositoryEvent extends RepositoryEvent {
 }
 
 class ClearCachedRepositoriesEvent extends RepositoryEvent {}
+
+class EmptyRepositoriesEvent extends RepositoryEvent {}

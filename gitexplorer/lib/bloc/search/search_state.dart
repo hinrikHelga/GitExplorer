@@ -1,11 +1,11 @@
 part of 'search_cubit.dart';
 
 class SearchState extends Equatable {
-  final String? query;
+  final String query;
   final int page;
 
   const SearchState({
-    this.query,
+    this.query = '',
     this.page = 1
   });
 

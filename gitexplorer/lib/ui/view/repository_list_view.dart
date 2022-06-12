@@ -155,7 +155,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                 child: PageStorage(
                   bucket: bucketGlobal,
                   child: ListView.builder(
-                    key: const PageStorageKey<String>('repositoryPage'),
+                    key: const PageStorageKey<String>('repositoryPage'), 
                     controller: _scrollController,
                     itemCount: (repoBloc.repositories.items?.length ?? 0),
                     itemBuilder: ((context, index) {
@@ -176,7 +176,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
   }
 
   // give user a bit of time to finish typing a query before fetching from the API
-  void debounce(VoidCallback callback, { Duration duration = const Duration(milliseconds: 1000) }) {
+  void debounce(VoidCallback callback, { Duration duration = const Duration(milliseconds: 750) }) {
     if (debouncer != null) {
       debouncer!.cancel();
     }
@@ -186,7 +186,9 @@ class _RepositoryListViewState extends State<RepositoryListView> {
 
   void queryRepos() => debounce(() {
     final cubit = context.read<SearchCubit>();
-    context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: cubit.state.query, page: cubit.state.page));
+    if (cubit.state.query.length >= 3) { // check for actual query string
+      context.read<RepositoryBloc>().add(FetchRepositoriesEvent(query: cubit.state.query, page: cubit.state.page));
+    }
   });
 
   @override
@@ -200,6 +202,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
          *  and the app will use the cached repositories from a previous request to display for the user.
          */
         if (previous.query != current.query) {
+          if (current.page != 1) { context.read<SearchCubit>().resetPage(); } // reset page number if it's been incremented
           context.read<RepositoryBloc>().add(ClearCachedRepositoriesEvent());
           return true;
         }
@@ -215,9 +218,12 @@ class _RepositoryListViewState extends State<RepositoryListView> {
         return false;
       },
       listener: ((context, state) {
-        if (state.query!.length >= 3) {
-          queryRepos();
+        // empty repo list if query search is too short
+        if (state.query.length < 3 &&
+          context.read<RepositoryBloc>().state is! RepositoryStateEmpty) { // only set state once
+          context.read<RepositoryBloc>().add(EmptyRepositoriesEvent());
         }
+        queryRepos();
       }),
       builder: ((context, state) => Stack(
           children: [
@@ -237,7 +243,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                     BlocConsumer<RepositoryBloc, RepositoryState>(
                       listener: ((context, state) {
                          /**
-                         * If the spinner is on, it means that the user has already attmepted to load more repositories.
+                         * If the spinner is on, it means that the user has already attempted to load more repositories.
                          * If the current state is 'RepositoriesLoaded', it means the app has fetched more repos to state so the spinner can be closed.
                          */
                         if (_showSpinner && state is RepositoryStateRepositoriesLoaded) {
@@ -261,7 +267,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
                         }
                       }),
                       builder: (context, state) {
-                        if (state is RepositoryStateEmpty || context.read<SearchCubit>().state.query!.length < 3) {
+                        if (state is RepositoryStateEmpty) {
                           return _buildEmptyColumn();
                         } else if (state is RepositoryStateLoading) {
                           return const Expanded(child: Center(child: CircularProgressIndicator()));

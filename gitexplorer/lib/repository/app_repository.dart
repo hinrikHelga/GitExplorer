@@ -48,6 +48,6 @@ class AppRepository {
 
   clearCache() {
     _repos = const Repositories.empty();
-    _page = 0;
+    _page = 1;
   }
 }
