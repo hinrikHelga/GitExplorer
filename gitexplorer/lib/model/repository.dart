@@ -34,7 +34,16 @@ class Repository extends Equatable {
   Map<String, dynamic> toJson() => _$RepositoryToJson(this);
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [
+    owner, 
+    fullName, 
+    language,
+    description,
+    forksCount,
+    openIssuesCount,
+    watchersCount,
+    stargazersCount,
+    latestRelease];
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
@@ -52,7 +61,7 @@ class Repositories extends Equatable {
   Map<String, dynamic> toJson() => _$RepositoriesToJson(this);
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [totalCount, items];
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)

@@ -214,9 +214,7 @@ class _RepositoryListViewState extends State<RepositoryListView> {
           queryRepos();
         }
       }),
-      builder: ((context, state) => SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(), // avoids keyboard overflow on bottom
-        child: Stack(
+      builder: ((context, state) => Stack(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -272,7 +270,6 @@ class _RepositoryListViewState extends State<RepositoryListView> {
               ),
             ),
           ],
-        ),
       )
     ));
   }

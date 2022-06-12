@@ -8,6 +8,7 @@ class LandingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SafeArea(
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         body: RepositoryListView(),
       ),
     );
