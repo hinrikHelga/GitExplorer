@@ -5,9 +5,15 @@ import 'package:gitexplorer/bloc/repository/search_cubit.dart';
 import 'package:gitexplorer/landing_screen.dart';
 import 'package:gitexplorer/repository/app_repository.dart';
 import 'package:gitexplorer/repository/dio_client.dart';
+import 'package:gitexplorer/utils/bloc_observer.dart';
 
 void main() {
-  runApp(const MyApp());
+  BlocOverrides.runZoned(
+    () {
+      runApp(const MyApp());
+    },
+    blocObserver: AppBlocObserver()
+  );
 }
 
 AppRepository _createAppRepository() {
